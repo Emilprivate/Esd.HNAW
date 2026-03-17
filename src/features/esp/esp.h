@@ -1,0 +1,41 @@
+#pragma once
+
+namespace PlayerBoxes {
+    bool& Enabled();
+    bool& CornerMode();
+    bool& Filled();
+    float& FillAlpha();
+    float& Thickness();
+    float* ColorRgb();
+    bool& UseTeamColors();
+    float* TeamColorRgb();
+    float* EnemyColorRgb();
+    int& TeamFilterMode();
+    int& VisibilityMode();
+    bool& PerFeatureDistanceLimitsEnabled();
+    float& MaxBoxDistanceMeters();
+    float& MaxSkeletonDistanceMeters();
+    float& MaxInfoDistanceMeters();
+    float& MaxChamsDistanceMeters();
+    int& InfoPosition();
+    bool& SkeletonEnabled();
+    float& SkeletonThickness();
+    float* SkeletonColorRgb();
+    bool& ChamsEnabled();
+    float& ChamsAlpha();
+    bool& ChamsSolidMode();
+    float& ChamsBrightness();
+    bool& ShowName();
+    bool& ShowDistance();
+    bool& ShowHealth();
+    bool& HealthBarEnabled();
+    bool& ShowNetworkId();
+    bool& ShowClassRank();
+    bool& ShowFaction();
+    void Render();
+    const char* LastStatus();
+    int LastPlayersSeen();
+    int LastProjected();
+    int LastDrawn();
+    const char* BuildDebugString();
+}

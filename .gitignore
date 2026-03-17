@@ -1,0 +1,50 @@
+# Build output
+/build/
+/bin/
+/lib/
+/out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# CMake user presets
+CMakeUserPresets.json
+
+# Visual Studio / MSBuild
+.vs/
+*.VC.db
+*.VC.opendb
+*.sdf
+*.suo
+*.user
+*.userosscache
+*.ipch
+*.pdb
+*.obj
+*.idb
+*.ilk
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+*.cache
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# Runtime dumps
+*.dmp
+*.stackdump
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
