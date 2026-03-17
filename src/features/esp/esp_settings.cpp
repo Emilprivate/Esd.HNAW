@@ -126,6 +126,46 @@ bool& PlayerBoxes::ShowFaction() {
     return gShowFaction;
 }
 
+bool& PlayerBoxes::CannonMapEnabled() {
+    return gCannonMapEnabled;
+}
+
+bool& PlayerBoxes::CannonMapRequireContext() {
+    return gCannonMapRequireContext;
+}
+
+float& PlayerBoxes::CannonMapPosX() {
+    return gCannonMapPosX;
+}
+
+float& PlayerBoxes::CannonMapPosY() {
+    return gCannonMapPosY;
+}
+
+float& PlayerBoxes::CannonMapSizePx() {
+    return gCannonMapSizePx;
+}
+
+float& PlayerBoxes::CannonMapRangeMeters() {
+    return gCannonMapRangeMeters;
+}
+
+bool& PlayerBoxes::CannonMapShowTeammates() {
+    return gCannonMapShowTeammates;
+}
+
+bool& PlayerBoxes::CannonImpactMarkerEnabled() {
+    return gCannonImpactMarkerEnabled;
+}
+
+float& PlayerBoxes::CannonImpactVelocity() {
+    return gCannonImpactVelocity;
+}
+
+float& PlayerBoxes::CannonImpactGravity() {
+    return gCannonImpactGravity;
+}
+
 const char* PlayerBoxes::LastStatus() {
     return gLastStatus.c_str();
 }

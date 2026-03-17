@@ -2,6 +2,7 @@
 #include "features/aimbot/weapon_type_names.h"
 
 #include "core/hnaw_offsets.h"
+#include "features/esp/esp.h"
 #include "features/esp/esp_internal.h"
 
 #include "imgui.h"
@@ -332,10 +333,13 @@ namespace Aimbot {
     static bool gUseWeaponBallistics = true;
     static float gDefaultMuzzleVelocity = 100.0f;
     static float gDefaultGravity = 9.81f;
+    static bool gVisibilityCheckEnabled = false;
     static bool gReloadSpeedEnabled = false;
     static float gReloadSpeedMultiplier = 1.0f;
     static bool gFireRateEnabled = false;
     static float gFireRateMultiplier = 1.0f;
+    static bool gNoRecoilEnabled = false;
+    static bool gNoSpreadEnabled = false;
     static std::string gLastStatus = "idle";
     static int gLastWeaponType = -1;
     static float gLastResolvedVelocity = 0.0f;
@@ -408,6 +412,10 @@ namespace Aimbot {
         return gDefaultGravity;
     }
 
+    bool& VisibilityCheckEnabled() {
+        return gVisibilityCheckEnabled;
+    }
+
     bool& ReloadSpeedEnabled() {
         return gReloadSpeedEnabled;
     }
@@ -422,6 +430,14 @@ namespace Aimbot {
 
     float& FireRateMultiplier() {
         return gFireRateMultiplier;
+    }
+
+    bool& NoRecoilEnabled() {
+        return gNoRecoilEnabled;
+    }
+
+    bool& NoSpreadEnabled() {
+        return gNoSpreadEnabled;
     }
 
     int LastWeaponType() {
@@ -833,6 +849,12 @@ namespace Aimbot {
             Vec3 targetWorld{};
             if (!TrySelectTargetWorldPos(roundPlayer, playerBase, spawnData, feet, gTargetBone, targetWorld)) {
                 continue;
+            }
+
+            if (gVisibilityCheckEnabled) {
+                if (!PlayerBoxes::IsRoundPlayerVisibleCached(roundPlayer)) {
+                    continue;
+                }
             }
 
             if (gDropCompEnabled && muzzleVelocity > 1.0f && gravity > 0.0f && hasLocalPosition) {

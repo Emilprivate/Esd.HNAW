@@ -47,6 +47,16 @@ namespace {
         bool showNetworkId = false;
         bool showClassRank = false;
         bool showFaction = false;
+        bool cannonMapEnabled = false;
+        bool cannonMapRequireContext = false;
+        float cannonMapPosX = 26.0f;
+        float cannonMapPosY = 0.0f;
+        float cannonMapSizePx = 220.0f;
+        float cannonMapRangeMeters = 300.0f;
+        bool cannonMapShowTeammates = false;
+        bool cannonImpactMarkerEnabled = true;
+        float cannonImpactVelocity = 145.0f;
+        float cannonImpactGravity = 9.81f;
         bool aimbotEnabled = false;
         bool aimbotRequireKey = true;
         int aimbotAimKey = 0x02;
@@ -60,10 +70,13 @@ namespace {
         bool aimbotUseWeaponBallistics = true;
         float aimbotDefaultVelocity = 100.0f;
         float aimbotDefaultGravity = 9.81f;
+        bool aimbotVisibilityCheckEnabled = false;
         bool aimbotReloadSpeedEnabled = false;
         float aimbotReloadSpeedMultiplier = 1.0f;
         bool aimbotFireRateEnabled = false;
         float aimbotFireRateMultiplier = 1.0f;
+        bool aimbotNoRecoilEnabled = false;
+        bool aimbotNoSpreadEnabled = false;
     };
 
     struct ConfigDb {
@@ -411,6 +424,16 @@ namespace {
         p.showNetworkId = PlayerBoxes::ShowNetworkId();
         p.showClassRank = PlayerBoxes::ShowClassRank();
         p.showFaction = PlayerBoxes::ShowFaction();
+        p.cannonMapEnabled = PlayerBoxes::CannonMapEnabled();
+        p.cannonMapRequireContext = PlayerBoxes::CannonMapRequireContext();
+        p.cannonMapPosX = PlayerBoxes::CannonMapPosX();
+        p.cannonMapPosY = PlayerBoxes::CannonMapPosY();
+        p.cannonMapSizePx = PlayerBoxes::CannonMapSizePx();
+        p.cannonMapRangeMeters = PlayerBoxes::CannonMapRangeMeters();
+        p.cannonMapShowTeammates = PlayerBoxes::CannonMapShowTeammates();
+        p.cannonImpactMarkerEnabled = PlayerBoxes::CannonImpactMarkerEnabled();
+        p.cannonImpactVelocity = PlayerBoxes::CannonImpactVelocity();
+        p.cannonImpactGravity = PlayerBoxes::CannonImpactGravity();
         p.aimbotEnabled = Aimbot::Enabled();
         p.aimbotRequireKey = Aimbot::RequireKey();
         p.aimbotAimKey = Aimbot::AimKey();
@@ -429,10 +452,13 @@ namespace {
         p.aimbotUseWeaponBallistics = Aimbot::UseWeaponBallistics();
         p.aimbotDefaultVelocity = Aimbot::DefaultMuzzleVelocity();
         p.aimbotDefaultGravity = Aimbot::DefaultGravity();
+        p.aimbotVisibilityCheckEnabled = Aimbot::VisibilityCheckEnabled();
         p.aimbotReloadSpeedEnabled = Aimbot::ReloadSpeedEnabled();
         p.aimbotReloadSpeedMultiplier = Aimbot::ReloadSpeedMultiplier();
         p.aimbotFireRateEnabled = Aimbot::FireRateEnabled();
         p.aimbotFireRateMultiplier = Aimbot::FireRateMultiplier();
+        p.aimbotNoRecoilEnabled = Aimbot::NoRecoilEnabled();
+        p.aimbotNoSpreadEnabled = Aimbot::NoSpreadEnabled();
         return p;
     }
 
@@ -482,6 +508,16 @@ namespace {
         PlayerBoxes::ShowNetworkId() = p.showNetworkId;
         PlayerBoxes::ShowClassRank() = p.showClassRank;
         PlayerBoxes::ShowFaction() = p.showFaction;
+        PlayerBoxes::CannonMapEnabled() = p.cannonMapEnabled;
+        PlayerBoxes::CannonMapRequireContext() = p.cannonMapRequireContext;
+        PlayerBoxes::CannonMapPosX() = p.cannonMapPosX;
+        PlayerBoxes::CannonMapPosY() = p.cannonMapPosY;
+        PlayerBoxes::CannonMapSizePx() = std::clamp(p.cannonMapSizePx, 140.0f, 420.0f);
+        PlayerBoxes::CannonMapRangeMeters() = std::clamp(p.cannonMapRangeMeters, 50.0f, 1200.0f);
+        PlayerBoxes::CannonMapShowTeammates() = p.cannonMapShowTeammates;
+        PlayerBoxes::CannonImpactMarkerEnabled() = p.cannonImpactMarkerEnabled;
+        PlayerBoxes::CannonImpactVelocity() = std::clamp(p.cannonImpactVelocity, 40.0f, 260.0f);
+        PlayerBoxes::CannonImpactGravity() = std::clamp(p.cannonImpactGravity, 0.0f, 20.0f);
         Aimbot::Enabled() = p.aimbotEnabled;
         Aimbot::RequireKey() = p.aimbotRequireKey;
         Aimbot::AimKey() = p.aimbotAimKey;
@@ -500,10 +536,13 @@ namespace {
         Aimbot::UseWeaponBallistics() = p.aimbotUseWeaponBallistics;
         Aimbot::DefaultMuzzleVelocity() = p.aimbotDefaultVelocity;
         Aimbot::DefaultGravity() = p.aimbotDefaultGravity;
+        Aimbot::VisibilityCheckEnabled() = p.aimbotVisibilityCheckEnabled;
         Aimbot::ReloadSpeedEnabled() = p.aimbotReloadSpeedEnabled;
         Aimbot::ReloadSpeedMultiplier() = std::clamp(p.aimbotReloadSpeedMultiplier, 1.0f, 5.0f);
         Aimbot::FireRateEnabled() = p.aimbotFireRateEnabled;
         Aimbot::FireRateMultiplier() = std::clamp(p.aimbotFireRateMultiplier, 1.0f, 5.0f);
+        Aimbot::NoRecoilEnabled() = p.aimbotNoRecoilEnabled;
+        Aimbot::NoSpreadEnabled() = p.aimbotNoSpreadEnabled;
     }
 
     void ReadProfileObject(const std::string& objectText, EspProfile& profile) {
@@ -560,6 +599,16 @@ namespace {
         TryReadBool(objectText, "showNetworkId", profile.showNetworkId);
         TryReadBool(objectText, "showClassRank", profile.showClassRank);
         TryReadBool(objectText, "showFaction", profile.showFaction);
+        TryReadBool(objectText, "cannonMapEnabled", profile.cannonMapEnabled);
+        TryReadBool(objectText, "cannonMapRequireContext", profile.cannonMapRequireContext);
+        TryReadFloat(objectText, "cannonMapPosX", profile.cannonMapPosX);
+        TryReadFloat(objectText, "cannonMapPosY", profile.cannonMapPosY);
+        TryReadFloat(objectText, "cannonMapSizePx", profile.cannonMapSizePx);
+        TryReadFloat(objectText, "cannonMapRangeMeters", profile.cannonMapRangeMeters);
+        TryReadBool(objectText, "cannonMapShowTeammates", profile.cannonMapShowTeammates);
+        TryReadBool(objectText, "cannonImpactMarkerEnabled", profile.cannonImpactMarkerEnabled);
+        TryReadFloat(objectText, "cannonImpactVelocity", profile.cannonImpactVelocity);
+        TryReadFloat(objectText, "cannonImpactGravity", profile.cannonImpactGravity);
         TryReadBool(objectText, "aimbotEnabled", profile.aimbotEnabled);
         TryReadBool(objectText, "aimbotRequireKey", profile.aimbotRequireKey);
         TryReadInt(objectText, "aimbotAimKey", profile.aimbotAimKey);
@@ -573,10 +622,13 @@ namespace {
         TryReadBool(objectText, "aimbotUseWeaponBallistics", profile.aimbotUseWeaponBallistics);
         TryReadFloat(objectText, "aimbotDefaultVelocity", profile.aimbotDefaultVelocity);
         TryReadFloat(objectText, "aimbotDefaultGravity", profile.aimbotDefaultGravity);
+        TryReadBool(objectText, "aimbotVisibilityCheckEnabled", profile.aimbotVisibilityCheckEnabled);
         TryReadBool(objectText, "aimbotReloadSpeedEnabled", profile.aimbotReloadSpeedEnabled);
         TryReadFloat(objectText, "aimbotReloadSpeedMultiplier", profile.aimbotReloadSpeedMultiplier);
         TryReadBool(objectText, "aimbotFireRateEnabled", profile.aimbotFireRateEnabled);
         TryReadFloat(objectText, "aimbotFireRateMultiplier", profile.aimbotFireRateMultiplier);
+        TryReadBool(objectText, "aimbotNoRecoilEnabled", profile.aimbotNoRecoilEnabled);
+        TryReadBool(objectText, "aimbotNoSpreadEnabled", profile.aimbotNoSpreadEnabled);
     }
 
     bool ParseConfigDb(const std::string& jsonText, ConfigDb& outDb) {
@@ -698,6 +750,16 @@ namespace {
             out << "      \"showNetworkId\": " << (p.showNetworkId ? "true" : "false") << ",\n";
             out << "      \"showClassRank\": " << (p.showClassRank ? "true" : "false") << ",\n";
             out << "      \"showFaction\": " << (p.showFaction ? "true" : "false") << ",\n";
+            out << "      \"cannonMapEnabled\": " << (p.cannonMapEnabled ? "true" : "false") << ",\n";
+            out << "      \"cannonMapRequireContext\": " << (p.cannonMapRequireContext ? "true" : "false") << ",\n";
+            out << "      \"cannonMapPosX\": " << p.cannonMapPosX << ",\n";
+            out << "      \"cannonMapPosY\": " << p.cannonMapPosY << ",\n";
+            out << "      \"cannonMapSizePx\": " << p.cannonMapSizePx << ",\n";
+            out << "      \"cannonMapRangeMeters\": " << p.cannonMapRangeMeters << ",\n";
+            out << "      \"cannonMapShowTeammates\": " << (p.cannonMapShowTeammates ? "true" : "false") << ",\n";
+            out << "      \"cannonImpactMarkerEnabled\": " << (p.cannonImpactMarkerEnabled ? "true" : "false") << ",\n";
+            out << "      \"cannonImpactVelocity\": " << p.cannonImpactVelocity << ",\n";
+            out << "      \"cannonImpactGravity\": " << p.cannonImpactGravity << ",\n";
             out << "      \"aimbotEnabled\": " << (p.aimbotEnabled ? "true" : "false") << ",\n";
             out << "      \"aimbotRequireKey\": " << (p.aimbotRequireKey ? "true" : "false") << ",\n";
             out << "      \"aimbotAimKey\": " << p.aimbotAimKey << ",\n";
@@ -711,10 +773,13 @@ namespace {
             out << "      \"aimbotUseWeaponBallistics\": " << (p.aimbotUseWeaponBallistics ? "true" : "false") << ",\n";
             out << "      \"aimbotDefaultVelocity\": " << p.aimbotDefaultVelocity << ",\n";
             out << "      \"aimbotDefaultGravity\": " << p.aimbotDefaultGravity << ",\n";
+            out << "      \"aimbotVisibilityCheckEnabled\": " << (p.aimbotVisibilityCheckEnabled ? "true" : "false") << ",\n";
             out << "      \"aimbotReloadSpeedEnabled\": " << (p.aimbotReloadSpeedEnabled ? "true" : "false") << ",\n";
             out << "      \"aimbotReloadSpeedMultiplier\": " << p.aimbotReloadSpeedMultiplier << ",\n";
             out << "      \"aimbotFireRateEnabled\": " << (p.aimbotFireRateEnabled ? "true" : "false") << ",\n";
-            out << "      \"aimbotFireRateMultiplier\": " << p.aimbotFireRateMultiplier << "\n";
+            out << "      \"aimbotFireRateMultiplier\": " << p.aimbotFireRateMultiplier << ",\n";
+            out << "      \"aimbotNoRecoilEnabled\": " << (p.aimbotNoRecoilEnabled ? "true" : "false") << ",\n";
+            out << "      \"aimbotNoSpreadEnabled\": " << (p.aimbotNoSpreadEnabled ? "true" : "false") << "\n";
             out << "    }" << (++index < db.profiles.size() ? "," : "") << "\n";
         }
 

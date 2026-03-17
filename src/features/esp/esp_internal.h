@@ -110,6 +110,7 @@ namespace EspInternal {
     extern MonoMethod* gMaterialSetIntByNameMethod;
     extern MonoMethod* gShaderFindMethod;
     extern MonoMethod* gPhysicsLinecastMethod;
+    extern int gPhysicsLinecastParamCount;
     extern MonoMethod* gPlayerActorInitializerGetCurrentModelMethod;
     extern MonoMethod* gPlayerSpawnDataGetPlayerActorInitializerMethod;
     extern MonoMethod* gPlayerStartDataGetPlayerActorInitializerMethod;
@@ -160,6 +161,16 @@ namespace EspInternal {
     extern bool gShowNetworkId;
     extern bool gShowClassRank;
     extern bool gShowFaction;
+    extern bool gCannonMapEnabled;
+    extern bool gCannonMapRequireContext;
+    extern float gCannonMapPosX;
+    extern float gCannonMapPosY;
+    extern float gCannonMapSizePx;
+    extern float gCannonMapRangeMeters;
+    extern bool gCannonMapShowTeammates;
+    extern bool gCannonImpactMarkerEnabled;
+    extern float gCannonImpactVelocity;
+    extern float gCannonImpactGravity;
     extern int gLastPlayersSeen;
     extern int gLastProjected;
     extern int gLastDrawn;

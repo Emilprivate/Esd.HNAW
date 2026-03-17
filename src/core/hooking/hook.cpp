@@ -2,6 +2,7 @@
 
 #include "core/hnaw_offsets.h"
 #include "features/aimbot/aimbot.h"
+#include "features/esp/esp.h"
 #include "ui/gui.h"
 
 #include <algorithm>
@@ -19,6 +20,9 @@ typedef void(__fastcall* tOwnerProcessFirearmWeaponInput)(void* self, void* arg1
 typedef void(__fastcall* tOwnerShootActiveFirearm)(void* self, bool isDryShot);
 typedef bool(__fastcall* tWeaponHolderGetCanShootFirearm)(void* self, void* arg1);
 typedef bool(__fastcall* tPlayerAnimationGetCanShootFirearm)(void* self, void* arg1);
+typedef void(__fastcall* tOwnerWeaponRecoilOnFiringActiveWeapon)(void* self, void* arg1);
+typedef bool(__fastcall* tClientWeaponHolderCalculateFirearmShotTrajectory)(void* self, void* originPosition, void* originForward, float trajectoryDistance, void* firearmProperties, float maxHorizontalDeviationAngle, void* segmentPositions, void* bulletDebugInfo);
+typedef bool(__fastcall* tClientCannonGetIsAimingState)(void* self, void* arg1);
 typedef void(__fastcall* tOwnerFinishedReloadState)(void* self, void* sender, void* eventArgs);
 
 namespace {
@@ -30,6 +34,10 @@ namespace {
     tOwnerShootActiveFirearm oOwnerShootActiveFirearm = nullptr;
     tWeaponHolderGetCanShootFirearm oWeaponHolderGetCanShootFirearm = nullptr;
     tPlayerAnimationGetCanShootFirearm oPlayerAnimationGetCanShootFirearm = nullptr;
+    tOwnerWeaponRecoilOnFiringActiveWeapon oOwnerWeaponRecoilOnFiringActiveWeapon = nullptr;
+    tClientWeaponHolderCalculateFirearmShotTrajectory oClientWeaponHolderCalculateFirearmShotTrajectory = nullptr;
+    tClientCannonGetIsAimingState oClientCannonGetIsAimingState = nullptr;
+    tClientCannonGetIsAimingState oClientMoveableCannonGetIsAimingState = nullptr;
 
     HWND gGameWindow = nullptr;
     WNDPROC gOriginalWndProc = nullptr;
@@ -41,7 +49,15 @@ namespace {
     void* gOwnerShootActiveFirearmAddress = nullptr;
     void* gWeaponHolderGetCanShootFirearmAddress = nullptr;
     void* gPlayerAnimationGetCanShootFirearmAddress = nullptr;
+    void* gOwnerWeaponRecoilOnFiringActiveWeaponAddress = nullptr;
+    void* gClientWeaponHolderCalculateFirearmShotTrajectoryAddress = nullptr;
+    void* gClientCannonGetIsAimingStateAddress = nullptr;
+    void* gClientMoveableCannonGetIsAimingStateAddress = nullptr;
     tOwnerFinishedReloadState gOwnerFinishedReloadStateMethod = nullptr;
+    bool gNoRecoilHookActive = false;
+    bool gNoSpreadHookActive = false;
+    bool gAutoReloadReady = false;
+    uint64_t gArtilleryAimingContextUntilMs = 0;
 
     float __fastcall hkGetReloadDuration(void* self, void* arg1, void* arg2) {
         if (!oGetReloadDuration) {
@@ -57,12 +73,10 @@ namespace {
     }
 
     void __fastcall hkOwnerProcessFirearmWeaponInput(void* self, void* arg1, void* arg2) {
+        PlayerBoxes::UpdateVisibilityCacheFromGameThread();
+
         if (oOwnerProcessFirearmWeaponInput) {
             oOwnerProcessFirearmWeaponInput(self, arg1, arg2);
-        }
-
-        if (self && Aimbot::ReloadSpeedEnabled() && gOwnerFinishedReloadStateMethod) {
-            gOwnerFinishedReloadStateMethod(self, nullptr, nullptr);
         }
     }
 
@@ -71,7 +85,11 @@ namespace {
             oOwnerShootActiveFirearm(self, isDryShot);
         }
 
-        if (!self || isDryShot || !Aimbot::FireRateEnabled()) {
+        if (!self || isDryShot) {
+            return;
+        }
+
+        if (!Aimbot::FireRateEnabled()) {
             return;
         }
 
@@ -124,6 +142,57 @@ namespace {
         }
 
         return oPlayerAnimationGetCanShootFirearm(self, arg1);
+    }
+
+    void __fastcall hkOwnerWeaponRecoilOnFiringActiveWeapon(void* self, void* arg1) {
+        if (Aimbot::NoRecoilEnabled()) {
+            return;
+        }
+        if (oOwnerWeaponRecoilOnFiringActiveWeapon) {
+            oOwnerWeaponRecoilOnFiringActiveWeapon(self, arg1);
+        }
+    }
+
+    bool __fastcall hkClientWeaponHolderCalculateFirearmShotTrajectory(void* self, void* originPosition, void* originForward, float trajectoryDistance, void* firearmProperties, float maxHorizontalDeviationAngle, void* segmentPositions, void* bulletDebugInfo) {
+        if (!oClientWeaponHolderCalculateFirearmShotTrajectory) {
+            return false;
+        }
+
+        if (Aimbot::NoSpreadEnabled()) {
+            maxHorizontalDeviationAngle = 0.0f;
+        }
+
+        return oClientWeaponHolderCalculateFirearmShotTrajectory(
+            self,
+            originPosition,
+            originForward,
+            trajectoryDistance,
+            firearmProperties,
+            maxHorizontalDeviationAngle,
+            segmentPositions,
+            bulletDebugInfo);
+    }
+
+    bool __fastcall hkClientCannonGetIsAimingState(void* self, void* arg1) {
+        if (!oClientCannonGetIsAimingState) {
+            return false;
+        }
+
+        const bool isAiming = oClientCannonGetIsAimingState(self, arg1);
+        PlayerBoxes::UpdateCannonImpactPredictionFromGameThread(true, self);
+        gArtilleryAimingContextUntilMs = GetTickCount64() + 400;
+        return isAiming;
+    }
+
+    bool __fastcall hkClientMoveableCannonGetIsAimingState(void* self, void* arg1) {
+        if (!oClientMoveableCannonGetIsAimingState) {
+            return false;
+        }
+
+        const bool isAiming = oClientMoveableCannonGetIsAimingState(self, arg1);
+        PlayerBoxes::UpdateCannonImpactPredictionFromGameThread(true, self);
+        gArtilleryAimingContextUntilMs = GetTickCount64() + 400;
+        return isAiming;
     }
 
     LRESULT CALLBACK DummyWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -407,6 +476,8 @@ bool Hook::Init() {
         gOwnerFinishedReloadStateMethod = reinterpret_cast<tOwnerFinishedReloadState>(HnawOffsets::methodOwnerWeaponHolderFinishedPlayerAnimationStateSMBOnFinishedState);
     }
 
+    gAutoReloadReady = false;
+
     if (HnawOffsets::hookOwnerWeaponHolderProcessFirearmWeaponInput) {
         gOwnerProcessFirearmWeaponInputAddress = reinterpret_cast<void*>(HnawOffsets::hookOwnerWeaponHolderProcessFirearmWeaponInput);
         if (MH_CreateHook(gOwnerProcessFirearmWeaponInputAddress, &hkOwnerProcessFirearmWeaponInput, reinterpret_cast<void**>(&oOwnerProcessFirearmWeaponInput)) == MH_OK) {
@@ -460,6 +531,70 @@ bool Hook::Init() {
         } else {
             gPlayerAnimationGetCanShootFirearmAddress = nullptr;
             oPlayerAnimationGetCanShootFirearm = nullptr;
+        }
+    }
+
+    if (HnawOffsets::hookOwnerWeaponRecoilOnFiringActiveWeapon) {
+        gOwnerWeaponRecoilOnFiringActiveWeaponAddress = reinterpret_cast<void*>(HnawOffsets::hookOwnerWeaponRecoilOnFiringActiveWeapon);
+        if (MH_CreateHook(gOwnerWeaponRecoilOnFiringActiveWeaponAddress, &hkOwnerWeaponRecoilOnFiringActiveWeapon, reinterpret_cast<void**>(&oOwnerWeaponRecoilOnFiringActiveWeapon)) == MH_OK) {
+            if (MH_EnableHook(gOwnerWeaponRecoilOnFiringActiveWeaponAddress) != MH_OK) {
+                MH_RemoveHook(gOwnerWeaponRecoilOnFiringActiveWeaponAddress);
+                gOwnerWeaponRecoilOnFiringActiveWeaponAddress = nullptr;
+                oOwnerWeaponRecoilOnFiringActiveWeapon = nullptr;
+                gNoRecoilHookActive = false;
+            } else {
+                gNoRecoilHookActive = true;
+            }
+        } else {
+            gOwnerWeaponRecoilOnFiringActiveWeaponAddress = nullptr;
+            oOwnerWeaponRecoilOnFiringActiveWeapon = nullptr;
+            gNoRecoilHookActive = false;
+        }
+    }
+
+    if (HnawOffsets::hookClientWeaponHolderCalculateFirearmShotTrajectory) {
+        gClientWeaponHolderCalculateFirearmShotTrajectoryAddress = reinterpret_cast<void*>(HnawOffsets::hookClientWeaponHolderCalculateFirearmShotTrajectory);
+        if (MH_CreateHook(gClientWeaponHolderCalculateFirearmShotTrajectoryAddress, &hkClientWeaponHolderCalculateFirearmShotTrajectory, reinterpret_cast<void**>(&oClientWeaponHolderCalculateFirearmShotTrajectory)) == MH_OK) {
+            if (MH_EnableHook(gClientWeaponHolderCalculateFirearmShotTrajectoryAddress) != MH_OK) {
+                MH_RemoveHook(gClientWeaponHolderCalculateFirearmShotTrajectoryAddress);
+                gClientWeaponHolderCalculateFirearmShotTrajectoryAddress = nullptr;
+                oClientWeaponHolderCalculateFirearmShotTrajectory = nullptr;
+                gNoSpreadHookActive = false;
+            } else {
+                gNoSpreadHookActive = true;
+            }
+        } else {
+            gClientWeaponHolderCalculateFirearmShotTrajectoryAddress = nullptr;
+            oClientWeaponHolderCalculateFirearmShotTrajectory = nullptr;
+            gNoSpreadHookActive = false;
+        }
+    }
+
+    if (HnawOffsets::hookClientCannonInteractableObjectBehaviourGetIsAimingState) {
+        gClientCannonGetIsAimingStateAddress = reinterpret_cast<void*>(HnawOffsets::hookClientCannonInteractableObjectBehaviourGetIsAimingState);
+        if (MH_CreateHook(gClientCannonGetIsAimingStateAddress, &hkClientCannonGetIsAimingState, reinterpret_cast<void**>(&oClientCannonGetIsAimingState)) == MH_OK) {
+            if (MH_EnableHook(gClientCannonGetIsAimingStateAddress) != MH_OK) {
+                MH_RemoveHook(gClientCannonGetIsAimingStateAddress);
+                gClientCannonGetIsAimingStateAddress = nullptr;
+                oClientCannonGetIsAimingState = nullptr;
+            }
+        } else {
+            gClientCannonGetIsAimingStateAddress = nullptr;
+            oClientCannonGetIsAimingState = nullptr;
+        }
+    }
+
+    if (HnawOffsets::hookClientMoveableCannonInteractableObjectBehaviourGetIsAimingState) {
+        gClientMoveableCannonGetIsAimingStateAddress = reinterpret_cast<void*>(HnawOffsets::hookClientMoveableCannonInteractableObjectBehaviourGetIsAimingState);
+        if (MH_CreateHook(gClientMoveableCannonGetIsAimingStateAddress, &hkClientMoveableCannonGetIsAimingState, reinterpret_cast<void**>(&oClientMoveableCannonGetIsAimingState)) == MH_OK) {
+            if (MH_EnableHook(gClientMoveableCannonGetIsAimingStateAddress) != MH_OK) {
+                MH_RemoveHook(gClientMoveableCannonGetIsAimingStateAddress);
+                gClientMoveableCannonGetIsAimingStateAddress = nullptr;
+                oClientMoveableCannonGetIsAimingState = nullptr;
+            }
+        } else {
+            gClientMoveableCannonGetIsAimingStateAddress = nullptr;
+            oClientMoveableCannonGetIsAimingState = nullptr;
         }
     }
 
@@ -524,8 +659,56 @@ void Hook::Remove() {
         gPlayerAnimationGetCanShootFirearmAddress = nullptr;
         oPlayerAnimationGetCanShootFirearm = nullptr;
     }
+
+    if (gOwnerWeaponRecoilOnFiringActiveWeaponAddress) {
+        MH_DisableHook(gOwnerWeaponRecoilOnFiringActiveWeaponAddress);
+        MH_RemoveHook(gOwnerWeaponRecoilOnFiringActiveWeaponAddress);
+        gOwnerWeaponRecoilOnFiringActiveWeaponAddress = nullptr;
+        oOwnerWeaponRecoilOnFiringActiveWeapon = nullptr;
+    }
+
+    if (gClientWeaponHolderCalculateFirearmShotTrajectoryAddress) {
+        MH_DisableHook(gClientWeaponHolderCalculateFirearmShotTrajectoryAddress);
+        MH_RemoveHook(gClientWeaponHolderCalculateFirearmShotTrajectoryAddress);
+        gClientWeaponHolderCalculateFirearmShotTrajectoryAddress = nullptr;
+        oClientWeaponHolderCalculateFirearmShotTrajectory = nullptr;
+    }
+
+    if (gClientCannonGetIsAimingStateAddress) {
+        MH_DisableHook(gClientCannonGetIsAimingStateAddress);
+        MH_RemoveHook(gClientCannonGetIsAimingStateAddress);
+        gClientCannonGetIsAimingStateAddress = nullptr;
+        oClientCannonGetIsAimingState = nullptr;
+    }
+
+    if (gClientMoveableCannonGetIsAimingStateAddress) {
+        MH_DisableHook(gClientMoveableCannonGetIsAimingStateAddress);
+        MH_RemoveHook(gClientMoveableCannonGetIsAimingStateAddress);
+        gClientMoveableCannonGetIsAimingStateAddress = nullptr;
+        oClientMoveableCannonGetIsAimingState = nullptr;
+    }
+    gNoRecoilHookActive = false;
+    gNoSpreadHookActive = false;
+    gAutoReloadReady = false;
+    gArtilleryAimingContextUntilMs = 0;
     gOwnerFinishedReloadStateMethod = nullptr;
 
     GUI::Shutdown();
     MH_Uninitialize();
+}
+
+bool Hook::IsNoRecoilHookActive() {
+    return gNoRecoilHookActive;
+}
+
+bool Hook::IsNoSpreadHookActive() {
+    return gNoSpreadHookActive;
+}
+
+bool Hook::IsAutoReloadReady() {
+    return gAutoReloadReady;
+}
+
+bool Hook::IsArtilleryAimingContextActive() {
+    return GetTickCount64() <= gArtilleryAimingContextUntilMs;
 }

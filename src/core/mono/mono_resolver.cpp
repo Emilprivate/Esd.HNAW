@@ -351,6 +351,7 @@ bool MonoResolver::ResolveAll() {
     resolveFieldRequired("HoldfastGame", "PlayerSpawnData", "Faction", HnawOffsets::playerSpawnDataFaction, "Field: PlayerSpawnData.Faction");
     resolveFieldRequired("HoldfastGame", "RoundPlayer", "WeaponHolder", HnawOffsets::roundPlayerWeaponHolder, "Field: RoundPlayer.WeaponHolder");
     resolveFieldAnyNameRequired("HoldfastGame", "WeaponHolder", { "lastFiredTime", "<lastFiredTime>k__BackingField" }, HnawOffsets::weaponHolderLastFiredTime, "Field: WeaponHolder.lastFiredTime");
+    resolveFieldAnyNameRequired("HoldfastGame", "WeaponHolder", { "playerFirearmAmmoHandler", "<playerFirearmAmmoHandler>k__BackingField" }, HnawOffsets::weaponHolderPlayerFirearmAmmoHandler, "Field: WeaponHolder.playerFirearmAmmoHandler");
     resolveFieldRequired("HoldfastGame", "ClientComponentReferenceManager", "clientAdminBroadcastMessageManager", HnawOffsets::clientAdminBroadcastMessageManager, "Field: ClientComponentReferenceManager.clientAdminBroadcastMessageManager");
     resolveFieldRequired("HoldfastGame", "ClientComponentReferenceManager", "clientSpectatorManager", HnawOffsets::clientSpectatorManager, "Field: ClientComponentReferenceManager.clientSpectatorManager");
     resolveFieldRequired("HoldfastGame", "ClientComponentReferenceManager", "clientRemoteConsoleAccessManager", HnawOffsets::clientRemoteConsoleAccessManager, "Field: ClientComponentReferenceManager.clientRemoteConsoleAccessManager");
@@ -375,6 +376,7 @@ bool MonoResolver::ResolveAll() {
     resolveFieldRequired("HoldfastGame", "ModelBonePositions", "leftHand", HnawOffsets::modelBonePositionsLeftHand, "Field: ModelBonePositions.leftHand");
     resolveFieldRequired("HoldfastGame", "ModelBonePositions", "rightHand", HnawOffsets::modelBonePositionsRightHand, "Field: ModelBonePositions.rightHand");
     resolveFieldAnyNameRequired("HoldfastGame", "OwnerWeaponHolder", { "queuedFireFirearm", "<queuedFireFirearm>k__BackingField" }, HnawOffsets::ownerWeaponHolderQueuedFireFirearm, "Field: OwnerWeaponHolder.queuedFireFirearm");
+    resolveFieldAnyNameRequired("HoldfastGame", "OwnerWeaponHolder", { "queuedFirearmReload", "<queuedFirearmReload>k__BackingField" }, HnawOffsets::ownerWeaponHolderQueuedFirearmReload, "Field: OwnerWeaponHolder.queuedFirearmReload");
 
     resolveMethodRequired("HoldfastGame", "ClientRoundPlayerManager", "GetAllRoundPlayers", 0, HnawOffsets::methodGetAllRoundPlayers, "Method: ClientRoundPlayerManager.GetAllRoundPlayers");
     resolveMethodRequired("UnityEngine", "Camera", "get_main", 0, HnawOffsets::methodCameraGetMain, "Method: Camera.get_main");
@@ -387,12 +389,19 @@ bool MonoResolver::ResolveAll() {
     resolveMethodAnyRequired("HoldfastGame", "RoundPlayer", "ExecutePlayerAction", { 1, 2, 3 }, HnawOffsets::methodRoundPlayerExecutePlayerAction, "Method: RoundPlayer.ExecutePlayerAction");
     resolveMethodRequired("HoldfastGame", "PlayerActorInitializer", "get_CurrentModel", 0, HnawOffsets::methodPlayerActorInitializerGetCurrentModel, "Method: PlayerActorInitializer.get_CurrentModel");
     resolveMethodAnyRequired("HoldfastGame", "ClientWeaponHolder", "get_ActiveWeaponDetails", { 0 }, HnawOffsets::methodWeaponHolderGetActiveWeaponDetails, "Method: ClientWeaponHolder.get_ActiveWeaponDetails");
+    resolveMethodAnyRequired("HoldfastGame", "PlayerFirearmAmmoHandler", "get_EquippedFirearmLoadedAmmo", { 0, 1 }, HnawOffsets::methodPlayerFirearmAmmoHandlerGetEquippedFirearmLoadedAmmo, "Method: PlayerFirearmAmmoHandler.get_EquippedFirearmLoadedAmmo");
+    resolveMethodAnyRequired("HoldfastGame", "PlayerFirearmAmmoHandler", "get_CanReloadFirearm", { 0, 1 }, HnawOffsets::methodPlayerFirearmAmmoHandlerGetCanReloadFirearm, "Method: PlayerFirearmAmmoHandler.get_CanReloadFirearm");
+    resolveMethodAnyRequired("HoldfastGame", "PlayerFirearmAmmoHandler", "RefillCurrentFirearmAmmo", { 0, 1, 2 }, HnawOffsets::methodPlayerFirearmAmmoHandlerRefillCurrentFirearmAmmo, "Method: PlayerFirearmAmmoHandler.RefillCurrentFirearmAmmo");
 
     resolveMethodAnyRequired("HoldfastGame", "ClientWeaponHolder", "GetReloadDuration", { 0, 1, 2 }, HnawOffsets::hookClientWeaponHolderGetReloadDuration, "Hook: ClientWeaponHolder.GetReloadDuration");
     resolveMethodAnyRequired("HoldfastGame", "OwnerWeaponHolder", "ProcessFirearmWeaponInput", { 2, 3, 4 }, HnawOffsets::hookOwnerWeaponHolderProcessFirearmWeaponInput, "Hook: OwnerWeaponHolder.ProcessFirearmWeaponInput");
     resolveMethodAnyRequired("HoldfastGame", "OwnerWeaponHolder", "_ShootActiveFirearm", { 1, 2 }, HnawOffsets::hookOwnerWeaponHolderShootActiveFirearm, "Hook: OwnerWeaponHolder._ShootActiveFirearm");
     resolveMethodAnyRequired("HoldfastGame", "WeaponHolder", "get_CanShootFirearm", { 0, 1 }, HnawOffsets::hookWeaponHolderGetCanShootFirearm, "Hook: WeaponHolder.get_CanShootFirearm");
     resolveMethodAnyRequired("HoldfastGame", "PlayerAnimationHandler", "get_CanShootFirearm", { 0, 1 }, HnawOffsets::hookPlayerAnimationHandlerGetCanShootFirearm, "Hook: PlayerAnimationHandler.get_CanShootFirearm");
+    resolveMethodAnyRequired("HoldfastGame", "OwnerWeaponRecoil", "OnFiringActiveWeapon", { 0, 1 }, HnawOffsets::hookOwnerWeaponRecoilOnFiringActiveWeapon, "Hook: OwnerWeaponRecoil.OnFiringActiveWeapon");
+    resolveMethodAnyRequired("HoldfastGame", "ClientWeaponHolder", "CalculateFirearmShotTrajectory", { 7, 8 }, HnawOffsets::hookClientWeaponHolderCalculateFirearmShotTrajectory, "Hook: ClientWeaponHolder.CalculateFirearmShotTrajectory");
+    resolveMethodAnyRequired("HoldfastGame", "ClientCannonInteractableObjectBehaviour", "get_IsAimingState", { 0, 1 }, HnawOffsets::hookClientCannonInteractableObjectBehaviourGetIsAimingState, "Hook: ClientCannonInteractableObjectBehaviour.get_IsAimingState");
+    resolveMethodAnyRequired("HoldfastGame", "ClientMoveableCannonInteractableObjectBehaviour", "get_IsAimingState", { 0, 1 }, HnawOffsets::hookClientMoveableCannonInteractableObjectBehaviourGetIsAimingState, "Hook: ClientMoveableCannonInteractableObjectBehaviour.get_IsAimingState");
     resolveMethodAnyRequired("HoldfastGame", "OwnerWeaponHolder", "ReadFirearmWeaponInput", { 2, 3, 4 }, HnawOffsets::methodOwnerWeaponHolderReadFirearmWeaponInput, "Method: OwnerWeaponHolder.ReadFirearmWeaponInput");
     resolveMethodAnyRequired("HoldfastGame", "OwnerWeaponHolder", "FinishedPlayerAnimationStateSMB_OnFinishedState", { 2, 3 }, HnawOffsets::methodOwnerWeaponHolderFinishedPlayerAnimationStateSMBOnFinishedState, "Method: OwnerWeaponHolder.FinishedPlayerAnimationStateSMB_OnFinishedState");
     resolveMethodAnyRequired("HoldfastGame", "ServerAzureBackendManager", "AuthenticatePlayer", { 0, 1, 2, 3, 4, 5 }, HnawOffsets::hookServerAzureBackendManagerAuthenticatePlayer, "Hook: ServerAzureBackendManager.AuthenticatePlayer");

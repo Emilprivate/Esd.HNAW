@@ -2,6 +2,7 @@
 
 #include "config/config.h"
 #include "core/hnaw_offsets.h"
+#include "core/hooking/hook.h"
 #include "core/mono/mono_resolver.h"
 #include "features/aimbot/aimbot.h"
 #include "features/experiments/experiments.h"
@@ -96,8 +97,9 @@ namespace {
         { "ClientWeaponHolder.get_ActiveWeaponDetails", &HnawOffsets::methodWeaponHolderGetActiveWeaponDetails }
     }};
 
-    constexpr std::array<SymbolRow, 6> kHookRows = {{
+    constexpr std::array<SymbolRow, 7> kHookRows = {{
         { "ClientWeaponHolder.GetReloadDuration", &HnawOffsets::hookClientWeaponHolderGetReloadDuration },
+        { "ClientWeaponHolder.CalculateFirearmShotTrajectory", &HnawOffsets::hookClientWeaponHolderCalculateFirearmShotTrajectory },
         { "ServerAzureBackendManager.AuthenticatePlayer", &HnawOffsets::hookServerAzureBackendManagerAuthenticatePlayer },
         { "ClientConnectionManager.JoinServer", &HnawOffsets::hookClientConnectionManagerJoinServer },
         { "PlayerBase.get_CanRun", &HnawOffsets::hookPlayerBaseGetCanRun },
@@ -185,6 +187,9 @@ namespace {
     void DrawOverviewTab() {
         ImGui::Text("Resolver: %s", HnawOffsets::status.c_str());
         ImGui::Text("Mono attached: %s", HnawOffsets::monoAttached ? "yes" : "no");
+        ImGui::Text("No recoil hook: %s", Hook::IsNoRecoilHookActive() ? "active" : "inactive");
+        ImGui::Text("No spread hook: %s", Hook::IsNoSpreadHookActive() ? "active" : "inactive");
+        ImGui::Text("Auto reload pipeline: %s", Hook::IsAutoReloadReady() ? "ready" : "missing symbols");
 
         ImGui::Spacing();
         ImGui::Text("Classes resolved: %d/%d", HnawOffsets::resolvedClassCount, HnawOffsets::requiredClassCount);
@@ -338,6 +343,23 @@ namespace {
                     }
                 }
 
+                if (ImGui::CollapsingHeader("Cannon Assist", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::Checkbox("Enable cannon mini-map", &PlayerBoxes::CannonMapEnabled());
+                    if (PlayerBoxes::CannonMapEnabled()) {
+                        ImGui::Checkbox("Require artillery/cannon context", &PlayerBoxes::CannonMapRequireContext());
+                        ImGui::SliderFloat("Map size", &PlayerBoxes::CannonMapSizePx(), 140.0f, 420.0f, "%.0f px");
+                        ImGui::SliderFloat("Map range", &PlayerBoxes::CannonMapRangeMeters(), 50.0f, 1200.0f, "%.0f m");
+                        ImGui::Checkbox("Show teammates on map", &PlayerBoxes::CannonMapShowTeammates());
+
+                        ImGui::Separator();
+                        ImGui::Checkbox("Predicted impact marker", &PlayerBoxes::CannonImpactMarkerEnabled());
+                        if (PlayerBoxes::CannonImpactMarkerEnabled()) {
+                            ImGui::SliderFloat("Impact velocity", &PlayerBoxes::CannonImpactVelocity(), 40.0f, 260.0f, "%.0f m/s");
+                            ImGui::SliderFloat("Impact gravity", &PlayerBoxes::CannonImpactGravity(), 0.0f, 20.0f, "%.2f");
+                        }
+                    }
+                }
+
             ImGui::EndTable();
         }
 
@@ -393,6 +415,7 @@ namespace {
 
         static const char* teamFilterItems[] = { "All", "Team only", "Enemy only" };
         ImGui::Combo("Target filter", &Aimbot::TeamFilterMode(), teamFilterItems, IM_ARRAYSIZE(teamFilterItems));
+        ImGui::Checkbox("Visibility check (LOS)", &Aimbot::VisibilityCheckEnabled());
 
         ImGui::Spacing();
         ImGui::Text("Status: %s", Aimbot::LastStatus());
@@ -416,6 +439,19 @@ namespace {
         ImGui::Checkbox("Enable fire rate", &Aimbot::FireRateEnabled());
         if (Aimbot::FireRateEnabled()) {
             ImGui::TextUnformatted("Maximum rapid-fire mode enabled.");
+        }
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Recoil");
+        ImGui::Separator();
+        ImGui::Checkbox("Enable no recoil", &Aimbot::NoRecoilEnabled());
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Accuracy");
+        ImGui::Separator();
+        ImGui::Checkbox("Enable no spread", &Aimbot::NoSpreadEnabled());
+        if (Aimbot::NoSpreadEnabled()) {
+            ImGui::TextUnformatted("Horizontal firearm spread is forced to zero.");
         }
 
         ImGui::Unindent();

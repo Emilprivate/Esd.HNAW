@@ -36,6 +36,7 @@ namespace HnawOffsets {
     inline uintptr_t playerSpawnDataFaction = 0;
     inline uintptr_t roundPlayerWeaponHolder = 0;
     inline uintptr_t weaponHolderLastFiredTime = 0;
+    inline uintptr_t weaponHolderPlayerFirearmAmmoHandler = 0;
     inline uintptr_t clientAdminBroadcastMessageManager = 0;
     inline uintptr_t clientSpectatorManager = 0;
     inline uintptr_t clientRemoteConsoleAccessManager = 0;
@@ -53,6 +54,7 @@ namespace HnawOffsets {
     inline uintptr_t modelBonePositionsLeftHand = 0;
     inline uintptr_t modelBonePositionsRightHand = 0;
     inline uintptr_t ownerWeaponHolderQueuedFireFirearm = 0;
+    inline uintptr_t ownerWeaponHolderQueuedFirearmReload = 0;
 
     inline uintptr_t methodGetAllRoundPlayers = 0;
     inline uintptr_t methodCameraGetMain = 0;
@@ -65,12 +67,19 @@ namespace HnawOffsets {
     inline uintptr_t methodRoundPlayerExecutePlayerAction = 0;
     inline uintptr_t methodPlayerActorInitializerGetCurrentModel = 0;
     inline uintptr_t methodWeaponHolderGetActiveWeaponDetails = 0;
+    inline uintptr_t methodPlayerFirearmAmmoHandlerGetEquippedFirearmLoadedAmmo = 0;
+    inline uintptr_t methodPlayerFirearmAmmoHandlerGetCanReloadFirearm = 0;
+    inline uintptr_t methodPlayerFirearmAmmoHandlerRefillCurrentFirearmAmmo = 0;
 
     inline uintptr_t hookClientWeaponHolderGetReloadDuration = 0;
     inline uintptr_t hookOwnerWeaponHolderProcessFirearmWeaponInput = 0;
     inline uintptr_t hookOwnerWeaponHolderShootActiveFirearm = 0;
     inline uintptr_t hookWeaponHolderGetCanShootFirearm = 0;
     inline uintptr_t hookPlayerAnimationHandlerGetCanShootFirearm = 0;
+    inline uintptr_t hookOwnerWeaponRecoilOnFiringActiveWeapon = 0;
+    inline uintptr_t hookClientWeaponHolderCalculateFirearmShotTrajectory = 0;
+    inline uintptr_t hookClientCannonInteractableObjectBehaviourGetIsAimingState = 0;
+    inline uintptr_t hookClientMoveableCannonInteractableObjectBehaviourGetIsAimingState = 0;
     inline uintptr_t methodOwnerWeaponHolderFinishedPlayerAnimationStateSMBOnFinishedState = 0;
     inline uintptr_t methodOwnerWeaponHolderReadFirearmWeaponInput = 0;
     inline uintptr_t hookServerAzureBackendManagerAuthenticatePlayer = 0;

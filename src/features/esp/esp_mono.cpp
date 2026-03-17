@@ -203,7 +203,12 @@ namespace EspInternal {
             gShaderFindMethod = gMonoApi.monoClassGetMethodFromName(gShaderClass, "Find", 1);
         }
         if (gPhysicsClass) {
-            gPhysicsLinecastMethod = gMonoApi.monoClassGetMethodFromName(gPhysicsClass, "Linecast", 2);
+            gPhysicsLinecastMethod = gMonoApi.monoClassGetMethodFromName(gPhysicsClass, "Linecast", 3);
+            gPhysicsLinecastParamCount = gPhysicsLinecastMethod ? 3 : 0;
+            if (!gPhysicsLinecastMethod) {
+                gPhysicsLinecastMethod = gMonoApi.monoClassGetMethodFromName(gPhysicsClass, "Linecast", 2);
+                gPhysicsLinecastParamCount = gPhysicsLinecastMethod ? 2 : 0;
+            }
         }
         if (gPlayerActorInitializerClass) {
             gPlayerActorInitializerGetCurrentModelMethod = gMonoApi.monoClassGetMethodFromName(gPlayerActorInitializerClass, "get_CurrentModel", 0);

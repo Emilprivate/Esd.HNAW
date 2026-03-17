@@ -14,10 +14,13 @@ namespace Aimbot {
     bool& UseWeaponBallistics();
     float& DefaultMuzzleVelocity();
     float& DefaultGravity();
+    bool& VisibilityCheckEnabled();
     bool& ReloadSpeedEnabled();
     float& ReloadSpeedMultiplier();
     bool& FireRateEnabled();
     float& FireRateMultiplier();
+    bool& NoRecoilEnabled();
+    bool& NoSpreadEnabled();
     int LastWeaponType();
     const char* LastWeaponTypeName();
     float LastResolvedVelocity();

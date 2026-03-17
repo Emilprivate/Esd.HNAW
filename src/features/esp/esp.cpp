@@ -48,6 +48,7 @@ namespace EspInternal {
     MonoMethod* gMaterialSetIntByNameMethod = nullptr;
     MonoMethod* gShaderFindMethod = nullptr;
     MonoMethod* gPhysicsLinecastMethod = nullptr;
+    int gPhysicsLinecastParamCount = 0;
     MonoMethod* gPlayerActorInitializerGetCurrentModelMethod = nullptr;
     MonoMethod* gPlayerSpawnDataGetPlayerActorInitializerMethod = nullptr;
     MonoMethod* gPlayerStartDataGetPlayerActorInitializerMethod = nullptr;
@@ -87,6 +88,16 @@ namespace EspInternal {
     bool gShowNetworkId = false;
     bool gShowClassRank = false;
     bool gShowFaction = false;
+    bool gCannonMapEnabled = false;
+    bool gCannonMapRequireContext = false;
+    float gCannonMapPosX = 26.0f;
+    float gCannonMapPosY = 0.0f;
+    float gCannonMapSizePx = 220.0f;
+    float gCannonMapRangeMeters = 300.0f;
+    bool gCannonMapShowTeammates = false;
+    bool gCannonImpactMarkerEnabled = true;
+    float gCannonImpactVelocity = 145.0f;
+    float gCannonImpactGravity = 9.81f;
     int gLastPlayersSeen = 0;
     int gLastProjected = 0;
     int gLastDrawn = 0;
